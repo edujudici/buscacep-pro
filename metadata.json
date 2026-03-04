@@ -1,0 +1,5 @@
+{
+  "name": "BuscaCEP Pro",
+  "description": "Uma ferramenta moderna e objetiva para localização de endereços e CEPs em todo o Brasil.",
+  "requestFramePermissions": []
+}
