@@ -1,5 +1,5 @@
 {
   "name": "BuscaCEP Pro",
-  "description": "Uma ferramenta moderna e objetiva para localização de endereços e CEPs em todo o Brasil.",
+  "description": "Uma ferramenta moderna e objetiva para localização de endereços e CEPs em todo o Brasil, agora com acesso restrito para maior segurança.",
   "requestFramePermissions": []
 }
