@@ -42,17 +42,33 @@ export default createStore<State>({
   actions: {
     async login({ commit }, code: string) {
       try {
-        // Try to get keys from the JSON environment variable
         const keysJson = import.meta.env.VITE_ACCESS_KEYS;
+        const accessCodeEnv = import.meta.env.VITE_ACCESS_CODE;
         
+        let keysMap: Record<string, string> = {};
+        
+        // 1. Parse keys map
         if (keysJson) {
-          const keysMap = JSON.parse(keysJson);
-          
-          if (code in keysMap) {
-            const expirationDate = new Date(keysMap[code]);
+          try {
+            if (typeof keysJson === 'string') {
+              let cleanJson = keysJson.trim().replace(/^['"]|['"]$/g, '');
+              keysMap = JSON.parse(cleanJson);
+            } else if (typeof keysJson === 'object') {
+              keysMap = keysJson as Record<string, string>;
+            }
+          } catch (e) {
+            console.error('Erro ao processar VITE_ACCESS_KEYS:', e);
+          }
+        }
+
+        // 2. Check if code is in the map (Expiration Logic)
+        if (keysMap && typeof keysMap === 'object' && Object.prototype.hasOwnProperty.call(keysMap, code)) {
+          const expirationStr = keysMap[code];
+          if (/^\d{4}-\d{2}-\d{2}$/.test(expirationStr)) {
+            const expirationDate = new Date(`${expirationStr}T23:59:59.999Z`);
             const now = new Date();
             
-            if (now < expirationDate) {
+            if (now.getTime() <= expirationDate.getTime()) {
               commit('SET_AUTH', true);
               commit('SET_ERROR', null);
               return true;
@@ -63,9 +79,9 @@ export default createStore<State>({
           }
         }
 
-        // Fallback to the simple single code if not found in the map or map doesn't exist
-        const validCode = import.meta.env.VITE_ACCESS_CODE || 'BUSCA_PRO_2024';
-        if (code === validCode) {
+        // 3. Fallback to single VITE_ACCESS_CODE (Master Key)
+        const masterKey = accessCodeEnv || 'BUSCA_PRO_2024';
+        if (code === masterKey) {
           commit('SET_AUTH', true);
           commit('SET_ERROR', null);
           return true;
@@ -74,7 +90,7 @@ export default createStore<State>({
         commit('SET_ERROR', 'Chave de acesso inválida.');
         return false;
       } catch (e) {
-        console.error('Erro ao validar chaves:', e);
+        console.error('Erro crítico no login:', e);
         commit('SET_ERROR', 'Erro interno na validação do acesso.');
         return false;
       }
