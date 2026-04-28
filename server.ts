@@ -12,9 +12,21 @@ async function startServer() {
 
   app.use(express.json());
 
+  // Logging middleware
+  app.use((req, res, next) => {
+    console.log(`${new Date().toISOString()} - ${req.method} ${req.url}`);
+    next();
+  });
+
+  // Health check
+  app.get('/api/health', (req, res) => {
+    res.json({ status: 'ok', environment: process.env.NODE_ENV || 'development' });
+  });
+
   // Proxy route for payment API to bypass CORS
-  app.post('/api/proxy-payment', async (req, res) => {
+  app.post(['/api/proxy-payment', '/api/proxy-payment/'], async (req, res) => {
     try {
+      console.log('Received payment proxy request:', req.body);
       const response = await fetch('https://payment.escaliagora.com.br/api/v1/payments', {
         method: 'POST',
         headers: {
@@ -24,6 +36,7 @@ async function startServer() {
       });
 
       const data = await response.json();
+      console.log('Payment API response status:', response.status);
       
       if (!response.ok) {
         return res.status(response.status).json(data);
@@ -34,6 +47,12 @@ async function startServer() {
       console.error('Proxy payment error:', error);
       res.status(500).json({ error: 'Internal Server Error', message: error.message });
     }
+  });
+
+  // Catch-all for API that didn't match
+  app.all('/api/*', (req, res) => {
+    console.log(`Unmatched API request: ${req.method} ${req.url}`);
+    res.status(404).json({ error: 'Not Found', message: `API route ${req.url} not found` });
   });
 
   if (process.env.NODE_ENV !== 'production') {
