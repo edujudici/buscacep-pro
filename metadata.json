@@ -1,5 +1,6 @@
 {
-  "name": "SaaS Pro - Soluções Corporativas",
+  "name": "BuscaCep Pro - Soluções Corporativas",
   "description": "Landing page profissional com planos de assinatura e acesso restrito para empresas.",
-  "requestFramePermissions": []
+  "requestFramePermissions": [],
+  "majorCapabilities": []
 }

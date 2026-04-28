@@ -17,7 +17,10 @@ import {
   MapPin,
   Navigation,
   LogOut,
-  Info
+  Info,
+  XCircle,
+  Clock,
+  ChevronLeft
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { searchByCEP, searchByAddress, type Address } from './services/cepService';
@@ -25,7 +28,7 @@ import { searchByCEP, searchByAddress, type Address } from './services/cepServic
 // Types
 type Plan = 'monthly' | 'quarterly' | 'yearly';
 type SearchMode = 'cep' | 'address';
-type View = 'landing' | 'checkout' | 'login' | 'system';
+type View = 'landing' | 'checkout' | 'login' | 'system' | 'payment-success' | 'payment-failure' | 'payment-pending';
 
 interface PricingPlan {
   id: Plan;
@@ -70,6 +73,11 @@ export default function App() {
   const [selectedPlan, setSelectedPlan] = useState<PricingPlan | null>(null);
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   
+  // Payer State
+  const [payer, setPayer] = useState({ name: '', surname: '', email: '' });
+  const [isProcessingPayment, setIsProcessingPayment] = useState(false);
+  const [paymentError, setPaymentError] = useState('');
+
   // Auth State
   const [accessKey, setAccessKey] = useState('');
   const [authError, setAuthError] = useState('');
@@ -83,9 +91,76 @@ export default function App() {
   const [isLoadingSearch, setIsLoadingSearch] = useState(false);
   const [searchError, setSearchError] = useState('');
 
+  // Path detection for payment returns
+  React.useEffect(() => {
+    const path = window.location.pathname;
+    if (path.includes('/payment/success') || path.includes('/payment/sucess')) {
+      setView('payment-success');
+    } else if (path.includes('/payment/failure')) {
+      setView('payment-failure');
+    } else if (path.includes('/payment/pending')) {
+      setView('payment-pending');
+    }
+  }, []);
+
   const handleBuy = (plan: PricingPlan) => {
     setSelectedPlan(plan);
+    setPaymentError('');
     setView('checkout');
+  };
+
+  const handleContinuePurchase = async () => {
+    if (!selectedPlan) return;
+    if (!payer.name || !payer.surname || !payer.email) {
+      setPaymentError('Por favor, preencha todos os campos do pagador.');
+      return;
+    }
+
+    setIsProcessingPayment(true);
+    setPaymentError('');
+
+    try {
+      // Parse price R$ 99 -> 99
+      const priceValue = parseInt(selectedPlan.price.replace(/[^\d]/g, ''));
+
+      const response = await fetch('/api/proxy-payment', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          item: {
+            id: `${selectedPlan.id}-001`,
+            title: `Plano ${selectedPlan.name}`,
+            quantity: 1,
+            unit_price: priceValue,
+            currency_id: 'BRL'
+          },
+          payer: {
+            name: payer.name,
+            surname: payer.surname,
+            email: payer.email
+          },
+          back_url: `${window.location.origin}/payment`
+        })
+      });
+
+      if (!response.ok) {
+        throw new Error('Falha ao gerar preferência de pagamento.');
+      }
+
+      const data = await response.json();
+
+      if (data.init_point) {
+        window.location.href = data.init_point;
+      } else {
+        throw new Error('URL de pagamento não encontrada no retorno.');
+      }
+    } catch (err: any) {
+      setPaymentError(err.message || 'Erro ao processar pagamento. Tente novamente.');
+    } finally {
+      setIsProcessingPayment(false);
+    }
   };
 
   const handleLogin = async (e: React.FormEvent) => {
@@ -198,9 +273,9 @@ export default function App() {
               <div className="max-w-7xl mx-auto px-6 h-20 flex items-center justify-between">
                 <div className="flex items-center gap-2">
                   <div className="w-10 h-10 bg-black rounded-xl flex items-center justify-center">
-                    <Zap className="text-white w-6 h-6" />
+                    <MapPin className="text-white w-6 h-6" />
                   </div>
-                  <span className="text-xl font-bold tracking-tight">SaaS Pro</span>
+                  <span className="text-xl font-bold tracking-tight">BuscaCep Pro</span>
                 </div>
 
                 <div className="hidden md:flex items-center gap-8">
@@ -342,10 +417,10 @@ export default function App() {
             <footer className="py-20 border-t border-zinc-100 px-6 mt-auto">
               <div className="max-w-7xl mx-auto flex flex-col md:flex-row justify-between items-center gap-8">
                 <div className="flex items-center gap-2">
-                  <Zap className="w-6 h-6" />
-                  <span className="font-bold">SaaS Pro</span>
+                  <MapPin className="w-6 h-6" />
+                  <span className="font-bold">BuscaCep Pro</span>
                 </div>
-                <p className="text-zinc-400 text-sm">© 2026 SaaS Pro. Todos os direitos reservados.</p>
+                <p className="text-zinc-400 text-sm">© 2026 BuscaCep Pro. Todos os direitos reservados.</p>
                 <div className="flex gap-8">
                   <a href="#" className="text-sm text-zinc-400 hover:text-black">Termos</a>
                   <a href="#" className="text-sm text-zinc-400 hover:text-black">Privacidade</a>
@@ -370,8 +445,43 @@ export default function App() {
               <h2 className="text-3xl font-bold mb-4">Confirmar Assinatura</h2>
               <p className="text-zinc-500 mb-8">
                 Você selecionou o plano <span className="font-bold text-black">{selectedPlan?.name}</span>. 
-                Deseja prosseguir para o pagamento seguro?
+                Preencha seus dados para prosseguir para o pagamento seguro.
               </p>
+
+              <div className="space-y-4 mb-8 text-left">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div className="space-y-1">
+                    <label className="text-[10px] font-bold uppercase tracking-wider text-zinc-400 ml-1">Nome</label>
+                    <input 
+                      type="text" 
+                      value={payer.name}
+                      onChange={(e) => setPayer({...payer, name: e.target.value})}
+                      placeholder="Ex: Eduardo"
+                      className="w-full px-4 py-3 bg-zinc-50 border border-zinc-200 rounded-xl focus:border-black transition-all outline-none text-sm"
+                    />
+                  </div>
+                  <div className="space-y-1">
+                    <label className="text-[10px] font-bold uppercase tracking-wider text-zinc-400 ml-1">Sobrenome</label>
+                    <input 
+                      type="text" 
+                      value={payer.surname}
+                      onChange={(e) => setPayer({...payer, surname: e.target.value})}
+                      placeholder="Ex: Judici"
+                      className="w-full px-4 py-3 bg-zinc-50 border border-zinc-200 rounded-xl focus:border-black transition-all outline-none text-sm"
+                    />
+                  </div>
+                </div>
+                <div className="space-y-1">
+                  <label className="text-[10px] font-bold uppercase tracking-wider text-zinc-400 ml-1">Email</label>
+                  <input 
+                    type="email" 
+                    value={payer.email}
+                    onChange={(e) => setPayer({...payer, email: e.target.value})}
+                    placeholder="email@exemplo.com"
+                    className="w-full px-4 py-3 bg-zinc-50 border border-zinc-200 rounded-xl focus:border-black transition-all outline-none text-sm"
+                  />
+                </div>
+              </div>
               
               <div className="bg-zinc-50 p-6 rounded-2xl mb-10 text-left">
                 <div className="flex justify-between mb-2">
@@ -384,18 +494,92 @@ export default function App() {
                 </div>
               </div>
 
+              {paymentError && (
+                <div className="mb-6 p-4 bg-red-50 text-red-600 rounded-xl text-sm font-medium flex items-center gap-2">
+                  <Info className="w-4 h-4" />
+                  {paymentError}
+                </div>
+              )}
+
               <div className="flex flex-col gap-4">
                 <button 
-                  onClick={() => alert('Obrigado! Esta é uma demonstração. Nenhuma cobrança foi realizada.')}
-                  className="w-full bg-black text-white py-4 rounded-2xl font-bold text-lg hover:bg-zinc-800 transition-all"
+                  onClick={handleContinuePurchase}
+                  disabled={isProcessingPayment}
+                  className="w-full bg-black text-white py-4 rounded-2xl font-bold text-lg hover:bg-zinc-800 transition-all flex items-center justify-center gap-3 disabled:opacity-50"
                 >
-                  Continuar Compra
+                  {isProcessingPayment ? <Loader2 className="w-5 h-5 animate-spin" /> : 'Continuar Compra'}
                 </button>
                 <button 
                   onClick={() => setView('landing')}
                   className="w-full bg-white text-zinc-500 py-4 rounded-2xl font-bold hover:text-black transition-all"
                 >
                   Cancelar e Voltar
+                </button>
+              </div>
+            </div>
+          </motion.div>
+        )}
+
+        {view.startsWith('payment-') && (
+          <motion.div 
+            key="payment-status"
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: 20 }}
+            className="min-h-screen bg-zinc-50 flex items-center justify-center p-6"
+          >
+            <div className="w-full max-w-xl bg-white p-12 rounded-[3rem] border border-zinc-200 shadow-2xl text-center">
+              {view === 'payment-success' && (
+                <>
+                  <div className="w-20 h-20 bg-green-50 rounded-3xl flex items-center justify-center mx-auto mb-8 border border-green-100">
+                    <Check className="w-10 h-10 text-green-600" />
+                  </div>
+                  <h2 className="text-3xl font-bold mb-4">Pagamento Confirmado!</h2>
+                  <p className="text-zinc-500 mb-8 leading-relaxed">
+                    Sua compra foi realizada com sucesso. <br />
+                    Em breve você receberá um e-mail com todas <br />
+                    as <span className="font-bold text-black">informações de acesso</span> ao sistema.
+                  </p>
+                </>
+              )}
+
+              {view === 'payment-pending' && (
+                <>
+                  <div className="w-20 h-20 bg-amber-50 rounded-3xl flex items-center justify-center mx-auto mb-8 border border-amber-100">
+                    <Clock className="w-10 h-10 text-amber-600" />
+                  </div>
+                  <h2 className="text-3xl font-bold mb-4">Pagamento em Processamento</h2>
+                  <p className="text-zinc-500 mb-8 leading-relaxed">
+                    O seu pagamento está sendo processado. <br />
+                    Assim que for confirmado, você receberá <br />
+                    as instruções de acesso por e-mail.
+                  </p>
+                </>
+              )}
+
+              {view === 'payment-failure' && (
+                <>
+                  <div className="w-20 h-20 bg-red-50 rounded-3xl flex items-center justify-center mx-auto mb-8 border border-red-100">
+                    <XCircle className="w-10 h-10 text-red-600" />
+                  </div>
+                  <h2 className="text-3xl font-bold mb-4">Ops! Algo deu errado</h2>
+                  <p className="text-zinc-500 mb-8 leading-relaxed">
+                    Não conseguimos processar o seu pagamento. <br />
+                    Por favor, verifique seus dados ou tente <br />
+                    novamente utilizando outro método.
+                  </p>
+                </>
+              )}
+
+              <div className="flex flex-col gap-4">
+                <button 
+                  onClick={() => {
+                    window.history.pushState({}, '', '/');
+                    setView('landing');
+                  }}
+                  className="w-full bg-black text-white py-4 rounded-2xl font-bold text-lg hover:bg-zinc-800 transition-all flex items-center justify-center gap-2"
+                >
+                  {view === 'payment-failure' ? 'Tentar Novamente' : 'Voltar para Início'}
                 </button>
               </div>
             </div>
@@ -471,7 +655,7 @@ export default function App() {
                 <div className="w-8 h-8 bg-black rounded-lg flex items-center justify-center">
                   <MapPin className="text-white w-5 h-5" />
                 </div>
-                <span className="font-bold text-xl tracking-tight">SaaS Pro</span>
+                <span className="font-bold text-xl tracking-tight">BuscaCep Pro</span>
               </div>
               <div className="flex items-center gap-4">
                 <span className="hidden sm:block text-[10px] font-bold text-zinc-400 uppercase tracking-widest">Autenticado</span>
