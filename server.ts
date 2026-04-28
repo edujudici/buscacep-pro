@@ -12,19 +12,26 @@ async function startServer() {
 
   app.use(express.json());
 
-  // Logging middleware
-  app.use((req, res, next) => {
-    console.log(`${new Date().toISOString()} - ${req.method} ${req.url}`);
-    next();
+  // Root level API check
+  app.get('/api-check', (req, res) => {
+    res.json({ message: 'API check ok' });
   });
 
+  // API Router
+  const apiRouter = express.Router();
+
   // Health check
-  app.get('/api/health', (req, res) => {
-    res.json({ status: 'ok', environment: process.env.NODE_ENV || 'development' });
+  apiRouter.get('/health', (req, res) => {
+    console.log('Health check requested');
+    res.json({ 
+      status: 'ok', 
+      timestamp: new Date().toISOString(),
+      environment: process.env.NODE_ENV || 'development' 
+    });
   });
 
   // Proxy route for payment API to bypass CORS
-  app.post(['/api/proxy-payment', '/api/proxy-payment/'], async (req, res) => {
+  apiRouter.post(['/proxy-payment', '/proxy-payment/'], async (req, res) => {
     try {
       console.log('Received payment proxy request:', req.body);
       const response = await fetch('https://payment.escaliagora.com.br/api/v1/payments', {
@@ -48,6 +55,9 @@ async function startServer() {
       res.status(500).json({ error: 'Internal Server Error', message: error.message });
     }
   });
+
+  // Root for API
+  app.use('/api', apiRouter);
 
   // Catch-all for API that didn't match
   app.all('/api/*', (req, res) => {
