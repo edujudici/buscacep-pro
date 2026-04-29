@@ -1,13 +1,13 @@
 import React, { useState } from 'react';
-import {
-  Check,
-  ArrowRight,
-  Lock,
-  Layout,
-  Shield,
-  Zap,
-  ChevronRight,
-  Menu,
+import { 
+  Check, 
+  ArrowRight, 
+  Lock, 
+  Layout, 
+  Shield, 
+  Zap, 
+  ChevronRight, 
+  Menu, 
   X,
   CreditCard,
   Building2,
@@ -72,7 +72,7 @@ export default function App() {
   const [view, setView] = useState<View>('landing');
   const [selectedPlan, setSelectedPlan] = useState<PricingPlan | null>(null);
   const [isMenuOpen, setIsMenuOpen] = useState(false);
-
+  
   // Payer State
   const [payer, setPayer] = useState({ name: '', surname: '', email: '' });
   const [isProcessingPayment, setIsProcessingPayment] = useState(false);
@@ -123,7 +123,7 @@ export default function App() {
       // Parse price R$ 99 -> 99
       const priceValue = parseInt(selectedPlan.price.replace(/[^\d]/g, ''));
 
-      const response = await fetch('/api/proxy-payment', {
+      const response = await fetch('https://payment.escaliagora.com.br/api/v1/payments', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -173,17 +173,17 @@ export default function App() {
 
     setIsLoadingAuth(true);
     await new Promise(resolve => setTimeout(resolve, 800));
-
+    
     const masterCode = import.meta.env.VITE_ACCESS_CODE;
     const accessKeysRaw = import.meta.env.VITE_ACCESS_KEYS;
-
+    
     let isValid = false;
     const trimmedKey = accessKey.trim();
 
     // Check master code
     if (masterCode && trimmedKey === masterCode) {
       isValid = true;
-    }
+    } 
     // Check individual keys with expiration
     else if (accessKeysRaw) {
       try {
@@ -191,7 +191,7 @@ export default function App() {
         if (keys[trimmedKey]) {
           const expirationDate = new Date(keys[trimmedKey]);
           const today = new Date();
-
+          
           // Reset hours to compare only dates
           today.setHours(0, 0, 0, 0);
           expirationDate.setHours(23, 59, 59, 999);
@@ -261,7 +261,7 @@ export default function App() {
     <div className="min-h-screen bg-white text-zinc-900 font-sans selection:bg-black selection:text-white">
       <AnimatePresence mode="wait">
         {view === 'landing' && (
-          <motion.div
+          <motion.div 
             key="landing"
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
@@ -281,14 +281,14 @@ export default function App() {
                 <div className="hidden md:flex items-center gap-8">
                   <a href="#features" className="text-sm font-medium text-zinc-500 hover:text-black transition-colors">Recursos</a>
                   <a href="#pricing" className="text-sm font-medium text-zinc-500 hover:text-black transition-colors">Planos</a>
-                  <button
+                  <button 
                     onClick={() => setView('login')}
                     className="text-sm font-medium text-zinc-500 hover:text-black transition-colors flex items-center gap-2"
                   >
                     <Lock className="w-4 h-4" />
                     Login
                   </button>
-                  <button
+                  <button 
                     onClick={() => document.getElementById('pricing')?.scrollIntoView({ behavior: 'smooth' })}
                     className="bg-black text-white px-6 py-2.5 rounded-full text-sm font-semibold hover:bg-zinc-800 transition-all"
                   >
@@ -318,11 +318,11 @@ export default function App() {
                     <span className="text-zinc-400 italic">PRODUTIVIDADE.</span>
                   </h1>
                   <p className="text-xl text-zinc-500 max-w-2xl mx-auto mb-12">
-                    A plataforma definitiva para gerenciar suas operações corporativas com segurança,
+                    A plataforma definitiva para gerenciar suas operações corporativas com segurança, 
                     velocidade e inteligência de dados.
                   </p>
                   <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
-                    <button
+                    <button 
                       onClick={() => document.getElementById('pricing')?.scrollIntoView({ behavior: 'smooth' })}
                       className="w-full sm:w-auto bg-black text-white px-10 py-4 rounded-full text-lg font-bold hover:bg-zinc-800 transition-all flex items-center justify-center gap-2"
                     >
@@ -345,7 +345,7 @@ export default function App() {
                     { icon: <Shield className="w-8 h-8" />, title: "Segurança Total", desc: "Criptografia de ponta a ponta e chaves de acesso exclusivas." },
                     { icon: <Building2 className="w-8 h-8" />, title: "Escalabilidade", desc: "Pronto para crescer junto com a sua empresa, sem limites." }
                   ].map((f, i) => (
-                    <motion.div
+                    <motion.div 
                       key={i}
                       initial={{ opacity: 0, y: 20 }}
                       whileInView={{ opacity: 1, y: 0 }}
@@ -372,7 +372,7 @@ export default function App() {
 
                 <div className="grid md:grid-cols-3 gap-8">
                   {PRICING_PLANS.map((plan) => (
-                    <div
+                    <div 
                       key={plan.id}
                       className={`relative p-10 rounded-[2.5rem] border ${plan.highlight ? 'border-black bg-black text-white' : 'border-zinc-200 bg-white'} transition-all hover:scale-[1.02]`}
                     >
@@ -397,11 +397,11 @@ export default function App() {
                           </li>
                         ))}
                       </ul>
-                      <button
+                      <button 
                         onClick={() => handleBuy(plan)}
                         className={`w-full py-4 rounded-2xl font-bold transition-all ${
-                          plan.highlight
-                            ? 'bg-white text-black hover:bg-zinc-100'
+                          plan.highlight 
+                            ? 'bg-white text-black hover:bg-zinc-100' 
                             : 'bg-black text-white hover:bg-zinc-800'
                         }`}
                       >
@@ -431,7 +431,7 @@ export default function App() {
         )}
 
         {view === 'checkout' && (
-          <motion.div
+          <motion.div 
             key="checkout"
             initial={{ opacity: 0, scale: 0.95 }}
             animate={{ opacity: 1, scale: 1 }}
@@ -444,7 +444,7 @@ export default function App() {
               </div>
               <h2 className="text-3xl font-bold mb-4">Confirmar Assinatura</h2>
               <p className="text-zinc-500 mb-8">
-                Você selecionou o plano <span className="font-bold text-black">{selectedPlan?.name}</span>.
+                Você selecionou o plano <span className="font-bold text-black">{selectedPlan?.name}</span>. 
                 Preencha seus dados para prosseguir para o pagamento seguro.
               </p>
 
@@ -452,8 +452,8 @@ export default function App() {
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div className="space-y-1">
                     <label className="text-[10px] font-bold uppercase tracking-wider text-zinc-400 ml-1">Nome</label>
-                    <input
-                      type="text"
+                    <input 
+                      type="text" 
                       value={payer.name}
                       onChange={(e) => setPayer({...payer, name: e.target.value})}
                       placeholder="Ex: Eduardo"
@@ -462,8 +462,8 @@ export default function App() {
                   </div>
                   <div className="space-y-1">
                     <label className="text-[10px] font-bold uppercase tracking-wider text-zinc-400 ml-1">Sobrenome</label>
-                    <input
-                      type="text"
+                    <input 
+                      type="text" 
                       value={payer.surname}
                       onChange={(e) => setPayer({...payer, surname: e.target.value})}
                       placeholder="Ex: Judici"
@@ -473,8 +473,8 @@ export default function App() {
                 </div>
                 <div className="space-y-1">
                   <label className="text-[10px] font-bold uppercase tracking-wider text-zinc-400 ml-1">Email</label>
-                  <input
-                    type="email"
+                  <input 
+                    type="email" 
                     value={payer.email}
                     onChange={(e) => setPayer({...payer, email: e.target.value})}
                     placeholder="email@exemplo.com"
@@ -482,7 +482,7 @@ export default function App() {
                   />
                 </div>
               </div>
-
+              
               <div className="bg-zinc-50 p-6 rounded-2xl mb-10 text-left">
                 <div className="flex justify-between mb-2">
                   <span className="text-zinc-500">Plano</span>
@@ -502,14 +502,14 @@ export default function App() {
               )}
 
               <div className="flex flex-col gap-4">
-                <button
+                <button 
                   onClick={handleContinuePurchase}
                   disabled={isProcessingPayment}
                   className="w-full bg-black text-white py-4 rounded-2xl font-bold text-lg hover:bg-zinc-800 transition-all flex items-center justify-center gap-3 disabled:opacity-50"
                 >
                   {isProcessingPayment ? <Loader2 className="w-5 h-5 animate-spin" /> : 'Continuar Compra'}
                 </button>
-                <button
+                <button 
                   onClick={() => setView('landing')}
                   className="w-full bg-white text-zinc-500 py-4 rounded-2xl font-bold hover:text-black transition-all"
                 >
@@ -521,7 +521,7 @@ export default function App() {
         )}
 
         {view.startsWith('payment-') && (
-          <motion.div
+          <motion.div 
             key="payment-status"
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
@@ -572,7 +572,7 @@ export default function App() {
               )}
 
               <div className="flex flex-col gap-4">
-                <button
+                <button 
                   onClick={() => {
                     window.history.pushState({}, '', '/');
                     setView('landing');
@@ -587,7 +587,7 @@ export default function App() {
         )}
 
         {view === 'login' && (
-          <motion.div
+          <motion.div 
             key="login"
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
@@ -631,7 +631,7 @@ export default function App() {
                 )}
               </form>
 
-              <button
+              <button 
                 onClick={() => setView('landing')}
                 className="mt-8 w-full text-zinc-500 text-sm font-medium hover:text-white transition-colors"
               >
@@ -642,7 +642,7 @@ export default function App() {
         )}
 
         {view === 'system' && (
-          <motion.div
+          <motion.div 
             key="system"
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
@@ -659,7 +659,7 @@ export default function App() {
               </div>
               <div className="flex items-center gap-4">
                 <span className="hidden sm:block text-[10px] font-bold text-zinc-400 uppercase tracking-widest">Autenticado</span>
-                <button
+                <button 
                   onClick={logout}
                   className="p-2 hover:bg-zinc-100 rounded-full transition-colors text-zinc-500 hover:text-black"
                 >
@@ -779,7 +779,7 @@ export default function App() {
                 <div className="h-full min-h-[500px] bg-white rounded-[2.5rem] p-8 border border-zinc-200 relative overflow-hidden shadow-sm">
                   <AnimatePresence mode="wait">
                     {results.length > 0 ? (
-                      <motion.div
+                      <motion.div 
                         key="results"
                         initial={{ opacity: 0, y: 10 }}
                         animate={{ opacity: 1, y: 0 }}
@@ -844,7 +844,7 @@ export default function App() {
                         </div>
                       </motion.div>
                     ) : (
-                      <motion.div
+                      <motion.div 
                         key="empty"
                         initial={{ opacity: 0 }}
                         animate={{ opacity: 1 }}
